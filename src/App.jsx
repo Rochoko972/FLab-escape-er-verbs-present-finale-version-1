@@ -36,12 +36,16 @@ const VISUAL_VOCAB_2 = [
 ];
 
 const MATCHING_PAIRS = [
-  { id: "1", french: "Je regarde", english: "I watch" },
-  { id: "2", french: "Tu danses", english: "You dance" },
-  { id: "3", french: "Nous chantons", english: "We sing" },
-  { id: "4", french: "Elle travaille", english: "She works" },
-  { id: "5", french: "Ils mangent", english: "They eat" },
-  { id: "6", french: "Vous habitez", english: "You (formal) live" },
+  { id: "1", french: "Je regarde la télé", english: "I watch TV" },
+  { id: "2", french: "Tu danses bien", english: "You dance well" },
+  { id: "3", french: "Nous chantons ensemble", english: "We sing together" },
+  { id: "4", french: "Elle travaille beaucoup", english: "She works a lot" },
+  { id: "5", french: "Ils mangent une pizza", english: "They eat a pizza" },
+  { id: "6", french: "Vous habitez à Paris", english: "You live in Paris" },
+  { id: "7", french: "Je cuisine le dîner", english: "I cook dinner" },
+  { id: "8", french: "Tu étudies le français", english: "You study French" },
+  { id: "9", french: "Il joue au tennis", english: "He plays tennis" },
+  { id: "10", french: "Elles voyagent en France", english: "They travel to France" },
 ];
 
 const CONJUGATION_ITEMS = [
@@ -56,12 +60,18 @@ const UNSCRAMBLE_ITEMS = [
   { id: "u1", words: ["parle", "Je", "français"], correct: "Je parle français", translation: "I speak French" },
   { id: "u2", words: ["pas", "ne", "Il", "dîne"], correct: "Il ne dîne pas", translation: "He is not having dinner" },
   { id: "u3", words: ["aimons", "Nous", "voyager"], correct: "Nous aimons voyager", translation: "We love to travel" },
+  { id: "u4", words: ["la", "écoutes", "Tu", "musique"], correct: "Tu écoutes la musique", translation: "You listen to music" },
+  { id: "u5", words: ["bien", "chantez", "Vous"], correct: "Vous chantez bien", translation: "You sing well" },
+  { id: "u6", words: ["au", "jouent", "Ils", "tennis"], correct: "Ils jouent au tennis", translation: "They play tennis" },
 ];
 
 const ERROR_CORRECTION_ITEMS = [
-  { id: "e1", incorrect: "Tu parle anglais ?", correct: "Tu parles anglais ?", explanation: 'With "Tu", you must add -S.', correctEn: "Do you speak English?" },
-  { id: "e2", incorrect: "Nous mangons la pizza.", correct: "Nous mangeons la pizza.", explanation: 'Keep the "E" in -ger verbs with Nous.', correctEn: "We eat pizza." },
-  { id: "e3", incorrect: "Ils danses bien.", correct: "Ils dansent bien.", explanation: "The plural ending is -ENT, not -ES.", correctEn: "They dance well." },
+  { id: "e1", incorrect: "Tu parle anglais ?", correct: "Tu parles anglais ?", explanation: 'With "Tu", add -ES not -E.', correctEn: "Do you speak English?", errorWord: "parle", fixWord: "parles" },
+  { id: "e2", incorrect: "Nous mangons la pizza.", correct: "Nous mangeons la pizza.", explanation: 'Keep the "E" in -GER verbs with Nous.', correctEn: "We eat pizza.", errorWord: "mangons", fixWord: "mangeons" },
+  { id: "e3", incorrect: "Ils danses bien.", correct: "Ils dansent bien.", explanation: "Ils/Elles ending is -ENT, not -ES.", correctEn: "They dance well.", errorWord: "danses", fixWord: "dansent" },
+  { id: "e4", incorrect: "Elle chantes une chanson.", correct: "Elle chante une chanson.", explanation: "Il/Elle/On ending is -E, not -ES.", correctEn: "She sings a song.", errorWord: "chantes", fixWord: "chante" },
+  { id: "e5", incorrect: "Vous travaillons beaucoup.", correct: "Vous travaillez beaucoup.", explanation: "Vous ending is -EZ, not -ONS.", correctEn: "You work a lot.", errorWord: "travaillons", fixWord: "travaillez" },
+  { id: "e6", incorrect: "Je études le français.", correct: "J'étudie le français.", explanation: "Je + vowel = J' and ending is -E.", correctEn: "I study French.", errorWord: "études", fixWord: "étudie" },
 ];
 
 // Translation dictionary for clickable words
@@ -131,6 +141,26 @@ const SENTENCE_TRANSLATIONS = {
   "Il ne dîne pas": "He is not having dinner",
   "Nous aimons voyager": "We love to travel",
 };
+
+// ── ACCENT TOLERANCE HELPER ───────────────────────────────────
+
+const normalizeAccents = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const checkAnswer = (input, expected) => {
+  const ci = input.toLowerCase().trim(), ce = expected.toLowerCase().trim();
+  if (ci === ce) return { correct: true, accentIssue: false };
+  if (normalizeAccents(ci) === normalizeAccents(ce)) return { correct: true, accentIssue: true };
+  return { correct: false, accentIssue: false };
+};
+
+const AccentWarning = ({ show }) => show ? (
+  <div style={{ marginTop: 6, fontSize: 11, color: "#d97706", fontStyle: "italic", animation: "fadeIn 0.2s" }}>{"⚠️"} Almost! Watch the accents (é, è, ê...)</div>
+) : null;
+
+const TipBox = ({ children }) => (
+  <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 14, padding: "12px 16px", marginBottom: 20, textAlign: "left" }}>
+    <p style={{ margin: 0, fontSize: 12, color: "#0369a1", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>{children}</p>
+  </div>
+);
 
 // ── PREMIUM VOICE ENGINE ──────────────────────────────────────
 // Selects the best available French voice on the device
@@ -904,6 +934,9 @@ const DefinitionSlide = ({ onUnlock }) => {
     { verb: "Manger", stem: "mang", en: "to eat", hint: "Remove -ER" },
     { verb: "Chanter", stem: "chant", en: "to sing", hint: "Remove -ER" },
     { verb: "Habiter", stem: "habit", en: "to live", hint: "Remove -ER" },
+    { verb: "Regarder", stem: "regard", en: "to watch", hint: "Remove -ER" },
+    { verb: "Jouer", stem: "jou", en: "to play", hint: "Remove -ER" },
+    { verb: "Danser", stem: "dans", en: "to dance", hint: "Remove -ER" },
   ];
 
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -911,11 +944,14 @@ const DefinitionSlide = ({ onUnlock }) => {
   const [status, setStatus] = useState("idle"); // idle | correct | wrong
   const [completed, setCompleted] = useState(new Set());
   const [showTip, setShowTip] = useState(true);
+  const [accentWarn, setAccentWarn] = useState(false);
 
   const current = STEMS[currentIdx];
 
   const handleSubmit = () => {
-    if (input.toLowerCase().trim() === current.stem) {
+    const result = checkAnswer(input, current.stem);
+    if (result.correct) {
+      if (result.accentIssue) setAccentWarn(true);
       VoiceEngine.sfx("success");
       VoiceEngine.speak(current.stem);
       setStatus("correct");
@@ -1694,87 +1730,64 @@ const QuestionSlide = ({ onUnlock }) => {
 // ── LISTENING ─────────────────────────────────────────────────
 
 const ListeningExercise = ({ onUnlock }) => {
+  const LISTEN_Q = [
+    { sentence: "Nous écoutons la musique.", answer: "écoutons", options: ["écoutez", "écoutons", "écoutent"], en: "We listen to music.", subject: "Nous" },
+    { sentence: "Tu parles français.", answer: "parles", options: ["parle", "parles", "parlent"], en: "You speak French.", subject: "Tu" },
+    { sentence: "Ils mangent une pizza.", answer: "mangent", options: ["mange", "mangeons", "mangent"], en: "They eat a pizza.", subject: "Ils" },
+    { sentence: "Elle danse bien.", answer: "danse", options: ["danse", "danses", "dansent"], en: "She dances well.", subject: "Elle" },
+    { sentence: "Vous travaillez beaucoup.", answer: "travaillez", options: ["travaillons", "travaillez", "travaillent"], en: "You work a lot.", subject: "Vous" },
+  ];
+  const [qIdx, setQIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selected, setSelected] = useState(null);
   const [status, setStatus] = useState("idle");
-  const [showTranslation, setShowTranslation] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const q = LISTEN_Q[qIdx];
 
-  const playAudio = () => {
-    VoiceEngine.sfx("click"); setIsPlaying(true);
-    VoiceEngine.speak("Nous écoutons la musique.", 0.78);
-    setTimeout(() => setIsPlaying(false), 2500);
-  };
+  const playAudio = () => { VoiceEngine.sfx("click"); setIsPlaying(true); VoiceEngine.speak(q.sentence, 0.78); setTimeout(() => setIsPlaying(false), 2500); };
 
   const handleCheck = () => {
     VoiceEngine.sfx("click");
-    if (selected === "écoutons") {
-      setStatus("correct"); VoiceEngine.sfx("success"); VoiceEngine.sfx("unlock"); setTimeout(onUnlock, 1500);
-    } else { setStatus("wrong"); VoiceEngine.sfx("error"); setTimeout(() => setStatus("idle"), 1500); }
-  };
-
-  const optionTranslations = {
-    "écoutez": "you listen (formal/plural)",
-    "écoutons": "we listen",
-    "écoutent": "they listen",
+    if (selected === q.answer) {
+      setStatus("correct"); VoiceEngine.sfx("success");
+      setTimeout(() => {
+        if (qIdx + 1 >= LISTEN_Q.length) { VoiceEngine.sfx("unlock"); setTimeout(onUnlock, 800); }
+        else { setQIdx(i => i + 1); setSelected(null); setStatus("idle"); setShowHint(false); }
+      }, 1000);
+    } else { setStatus("wrong"); VoiceEngine.sfx("error"); setTimeout(() => setStatus("idle"), 1200); }
   };
 
   return (
     <div style={{ textAlign: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 20 }}>
+        {LISTEN_Q.map((_, i) => (<div key={i} style={{ width: 28, height: 5, borderRadius: 3, background: i < qIdx ? "#10b981" : i === qIdx ? "#0ea5e9" : "#e2e8f0", transition: "all 0.3s" }} />))}
+      </div>
       <button onClick={playAudio} disabled={isPlaying}
-        style={{
-          width: 110, height: 110, borderRadius: "50%", border: "none",
-          background: isPlaying ? "linear-gradient(135deg, #0ea5e9, #6366f1)" : "#0f172a",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          margin: "0 auto 28px", boxShadow: isPlaying ? "0 0 24px rgba(14,165,233,0.4)" : "0 6px 20px rgba(0,0,0,0.15)",
-          transition: "all 0.3s", fontSize: 36,
-        }}
-      >
+        style={{ width: 90, height: 90, borderRadius: "50%", border: "none", background: isPlaying ? "linear-gradient(135deg, #0ea5e9, #6366f1)" : "#0f172a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: isPlaying ? "0 0 24px rgba(14,165,233,0.4)" : "0 6px 20px rgba(0,0,0,0.15)", transition: "all 0.3s", fontSize: 32 }}>
         {isPlaying ? "🌊" : "▶️"}
       </button>
-      <p style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 3, fontWeight: 700, textTransform: "uppercase", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>
-        Audio Signal Intercepted
+      <p style={{ color: "#94a3b8", fontSize: 10, letterSpacing: 3, fontWeight: 700, textTransform: "uppercase", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+        Signal {qIdx + 1} / {LISTEN_Q.length}
       </p>
-      <button onClick={() => setShowTranslation(!showTranslation)}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: 12, marginBottom: 20, fontFamily: "'DM Sans', sans-serif", textDecoration: "underline", textDecorationStyle: "dotted" }}
-      >
-        {showTranslation ? '🔽 "We listen to music."' : "💡 Show translation hint"}
+      <button onClick={() => setShowHint(!showHint)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: 11, marginBottom: 16, fontFamily: "'DM Sans'", textDecoration: "underline dotted" }}>
+        {showHint ? `= "${q.en}"` : "💡 Translation hint"}
       </button>
-      <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 28, flexWrap: "wrap" }}>
-        {["écoutez", "écoutons", "écoutent"].map((opt) => (
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+        {q.options.map(opt => (
           <button key={opt} onClick={() => { VoiceEngine.sfx("click"); setSelected(opt); VoiceEngine.speak(opt); }}
-            style={{
-              padding: "14px 28px", borderRadius: 12,
-              border: selected === opt ? "2px solid #0ea5e9" : "1px solid #e2e8f0",
-              background: selected === opt ? "#0ea5e9" : "#fff",
-              color: selected === opt ? "#fff" : "#334155",
-              fontWeight: 800, fontSize: 16, cursor: "pointer", transition: "all 0.2s",
-              transform: selected === opt ? "scale(1.04)" : "scale(1)", fontFamily: "'Outfit', sans-serif",
-              display: "flex", flexDirection: "column", alignItems: "center",
-            }}
-          >
+            style={{ padding: "12px 20px", borderRadius: 12, border: selected === opt ? "2px solid #0ea5e9" : "1px solid #e2e8f0", background: selected === opt ? "#0ea5e9" : "#fff", color: selected === opt ? "#fff" : "#334155", fontWeight: 800, fontSize: 15, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Outfit', sans-serif" }}>
             {opt}
-            <span style={{ fontSize: 9, opacity: 0.5, fontWeight: 400, marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
-              {optionTranslations[opt]}
-            </span>
           </button>
         ))}
       </div>
-      {selected && (
-        <button onClick={handleCheck}
-          style={{
-            padding: "14px 40px", background: "#0f172a", color: "#fff", border: "none",
-            borderRadius: 50, fontWeight: 800, fontSize: 15, cursor: "pointer",
-            boxShadow: "0 6px 20px rgba(0,0,0,0.15)", fontFamily: "'Outfit', sans-serif",
-          }}
-        >
-          CONFIRM {status === "correct" ? "✅" : status === "wrong" ? "❌" : ""}
-        </button>
+      {selected && status === "idle" && (
+        <button onClick={handleCheck} style={{ padding: "12px 32px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 50, fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "'Outfit'" }}>CONFIRM</button>
       )}
+      {status === "correct" && <div style={{ color: "#059669", fontWeight: 800, fontSize: 16, animation: "bounceIn 0.3s" }}>✅ Correct! {q.subject} + {q.answer}</div>}
+      {status === "wrong" && <div style={{ color: "#ef4444", fontWeight: 700, fontSize: 14, animation: "fadeIn 0.2s" }}>❌ Try again! Listen carefully to the subject.</div>}
     </div>
   );
 };
-
-// ── MATCHING ──────────────────────────────────────────────────
 
 const MatchingExercise = ({ onUnlock }) => {
   const [matched, setMatched] = useState({});
@@ -1917,51 +1930,66 @@ const UnscrambleExercise = ({ onUnlock }) => {
 // ── SPOT ERROR ────────────────────────────────────────────────
 
 const SpotErrorExercise = ({ onUnlock }) => {
-  const [revealed, setRevealed] = useState({});
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [input, setInput] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [completed, setCompleted] = useState(new Set());
+  const [accentWarn, setAccentWarn] = useState(false);
 
-  useEffect(() => {
-    if (Object.keys(revealed).length === ERROR_CORRECTION_ITEMS.length) { VoiceEngine.sfx("unlock"); setTimeout(onUnlock, 1500); }
-  }, [revealed]);
+  const item = ERROR_CORRECTION_ITEMS[currentIdx];
+
+  const handleSubmit = () => {
+    const result = checkAnswer(input, item.fixWord);
+    if (result.correct) {
+      if (result.accentIssue) setAccentWarn(true); else setAccentWarn(false);
+      VoiceEngine.sfx("success"); VoiceEngine.speak(item.correct);
+      setStatus("correct");
+      const nc = new Set(completed); nc.add(currentIdx); setCompleted(nc);
+      setTimeout(() => {
+        if (nc.size === ERROR_CORRECTION_ITEMS.length) { VoiceEngine.sfx("unlock"); setTimeout(onUnlock, 800); }
+        else { let next = (currentIdx + 1) % ERROR_CORRECTION_ITEMS.length; while (nc.has(next)) next = (next + 1) % ERROR_CORRECTION_ITEMS.length; setCurrentIdx(next); setInput(""); setStatus("idle"); setAccentWarn(false); }
+      }, 1500);
+    } else { VoiceEngine.sfx("error"); setStatus("wrong"); setAccentWarn(false); setTimeout(() => setStatus("idle"), 1500); }
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {ERROR_CORRECTION_ITEMS.map((item) => (
-        <div key={item.id} style={{
-          background: "#f8fafc", border: "1px solid #f1f5f9", padding: "20px 24px", borderRadius: 16,
-          display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ background: "#fef3c7", padding: 8, borderRadius: "50%", fontSize: 18 }}>⚠️</span>
-            <span style={{ fontSize: 16, fontWeight: 500, color: "#475569", textDecoration: "line-through", textDecorationColor: "#ef4444", textDecorationStyle: "wavy" }}>
-              <ClickableSentence text={item.incorrect} />
-            </span>
-          </div>
-          {revealed[item.id] ? (
-            <div style={{ background: "#f0fdf4", padding: "12px 18px", borderRadius: 12, border: "1px solid #bbf7d0", flex: 1, minWidth: 180, animation: "fadeIn 0.2s" }}>
-              <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: "#166534", display: "flex", alignItems: "center", gap: 6 }}>
-                <ClickableSentence text={item.correct} />
-                <button onClick={() => VoiceEngine.speak(item.correct)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: 2 }}>🔊</button>
-              </p>
-              <p style={{ margin: "2px 0 0", fontSize: 11, color: "#059669", fontStyle: "italic", fontFamily: "'DM Sans', sans-serif" }}>= {item.correctEn}</p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#4ade80", fontFamily: "'DM Sans', sans-serif" }}>{item.explanation}</p>
-            </div>
-          ) : (
-            <button onClick={() => { VoiceEngine.sfx("click"); VoiceEngine.speak(item.correct); setRevealed((p) => ({ ...p, [item.id]: true })); }}
-              style={{
-                padding: "8px 18px", borderRadius: 8, border: "none", background: "#e2e8f0", color: "#475569",
-                fontWeight: 700, fontSize: 10, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", fontFamily: "'Outfit', sans-serif",
-              }}
-            >
-              Debug Line
-            </button>
-          )}
+    <div>
+      <TipBox>{"💡"} <strong>DEBUG:</strong> Find the incorrectly conjugated word and type the correct form. The error is always in the verb conjugation.</TipBox>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 20 }}>
+        {ERROR_CORRECTION_ITEMS.map((_, i) => (<div key={i} style={{ width: 28, height: 5, borderRadius: 3, background: completed.has(i) ? "#10b981" : i === currentIdx ? "#0ea5e9" : "#e2e8f0", transition: "all 0.3s" }} />))}
+      </div>
+      <div style={{ background: "#0f172a", borderRadius: 20, padding: "28px 24px", maxWidth: 520, margin: "0 auto 20px", color: "#fff" }}>
+        <div style={{ fontSize: 10, color: "#64748b", letterSpacing: 2, marginBottom: 12, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>
+          Bug {currentIdx + 1} / {ERROR_CORRECTION_ITEMS.length} — Find & fix the error:
         </div>
-      ))}
+        <div style={{ fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 600, fontFamily: "'Outfit', sans-serif", marginBottom: 6, lineHeight: 1.5 }}>
+          {item.incorrect.split(" ").map((word, i) => (
+            <span key={i} style={{ color: word.toLowerCase() === item.errorWord.toLowerCase() ? "#fca5a5" : "#e2e8f0", textDecoration: word.toLowerCase() === item.errorWord.toLowerCase() ? "wavy underline #ef4444" : "none" }}>
+              {word}{" "}
+            </span>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: "#64748b", fontStyle: "italic", marginBottom: 20 }}>= {item.correctEn}</div>
+        {status !== "correct" && (
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <input type="text" value={input} onChange={(e) => { setInput(e.target.value); setStatus("idle"); }} onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              placeholder="Type the corrected word..." style={{ padding: "12px 16px", fontSize: 18, fontWeight: 800, fontFamily: "'Outfit'", textAlign: "center", background: "rgba(255,255,255,0.08)", border: "none", borderBottom: `3px solid ${status === "wrong" ? "#ef4444" : "#38bdf8"}`, color: "#fff", borderRadius: "8px 8px 0 0", outline: "none", width: 200 }} />
+            <button onClick={handleSubmit} style={{ padding: "12px 20px", background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, cursor: "pointer", fontSize: 14, fontFamily: "'Outfit'" }}>FIX</button>
+          </div>
+        )}
+        {status === "correct" && (
+          <div style={{ animation: "bounceIn 0.3s", textAlign: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#4ade80" }}>✅ Fixed! {item.errorWord} → {item.fixWord}</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{item.explanation}</div>
+            <AccentWarning show={accentWarn} />
+          </div>
+        )}
+        {status === "wrong" && <div style={{ textAlign: "center", color: "#fca5a5", fontSize: 13, marginTop: 10, animation: "fadeIn 0.2s" }}>❌ Not quite. Look at the highlighted word — what should the ending be?</div>}
+      </div>
+      <p style={{ textAlign: "center", color: "#94a3b8", fontSize: 12, fontFamily: "'DM Sans'" }}>{completed.size} / {ERROR_CORRECTION_ITEMS.length} bugs fixed</p>
     </div>
   );
 };
-
-// ── CONJUGATION ───────────────────────────────────────────────
 
 const ConjugationExercise = ({ onUnlock }) => {
   // 20 questions covering all subjects and verbs learned
@@ -2503,8 +2531,8 @@ const SECTIONS = [
 
 export default function App() {
   const [level, setLevel] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Load best voice on mount
   useEffect(() => { VoiceEngine.loadBestVoice(); }, []);
 
   const unlockLevel = useCallback((cur) => {
@@ -2518,115 +2546,114 @@ export default function App() {
   }, [level]);
 
   return (
-    <div style={{
-      display: "flex", background: "#020617", minHeight: "100vh",
-      fontFamily: "'DM Sans', sans-serif", color: "#1e293b", overflowX: "hidden",
-    }}>
+    <div style={{ display: "flex", background: "#020617", minHeight: "100vh", fontFamily: "'DM Sans', sans-serif", color: "#1e293b", overflowX: "hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&family=Outfit:wght@300;400;600;700;800;900&display=swap');
         @keyframes fadeIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
         @keyframes bounceIn { 0% { transform:scale(0.8); opacity:0; } 60% { transform:scale(1.08); } 100% { transform:scale(1); opacity:1; } }
         @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
         @keyframes tooltipIn { from { opacity:0; transform:translateX(-50%) translateY(6px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+        @keyframes shake { 0%,100% { transform:translateX(0); } 20% { transform:translateX(-8px); } 40% { transform:translateX(8px); } 60% { transform:translateX(-4px); } 80% { transform:translateX(4px); } }
+        @keyframes floatP { from { transform:translateY(0) translateX(0); } to { transform:translateY(-30px) translateX(15px); } }
         * { box-sizing: border-box; }
         body { margin: 0; background: #020617; }
         input::placeholder { color: #cbd5e1; }
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        @media (max-width: 768px) {
+          .desktop-sidebar { display: none !important; }
+        }
+        @media (min-width: 769px) {
+          .mobile-topbar { display: none !important; }
+        }
       `}</style>
 
       {/* Grid BG */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.06,
-        backgroundImage: "linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-      }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.06, backgroundImage: "linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
 
-      {/* Floating particles */}
+      {/* Particles */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-        {Array.from({ length: 20 }, (_, i) => (
-          <div key={i} style={{
-            position: "absolute",
-            left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`,
-            width: Math.random() * 2.5 + 1, height: Math.random() * 2.5 + 1,
-            borderRadius: "50%", background: "rgba(14,165,233,0.2)",
-            animation: `floatP ${Math.random() * 15 + 10}s ease-in-out ${Math.random() * 5}s infinite alternate`,
-          }} />
+        {Array.from({ length: 15 }, (_, i) => (
+          <div key={i} style={{ position: "absolute", left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, width: Math.random() * 2.5 + 1, height: Math.random() * 2.5 + 1, borderRadius: "50%", background: "rgba(14,165,233,0.2)", animation: `floatP ${Math.random() * 15 + 10}s ease-in-out ${Math.random() * 5}s infinite alternate` }} />
         ))}
-        <style>{`@keyframes floatP { from { transform:translateY(0) translateX(0); } to { transform:translateY(-30px) translateX(15px); } }`}</style>
       </div>
 
-      {/* SIDEBAR HUD */}
-      <aside style={{
-        display: "flex", flexDirection: "column", width: 240, height: "100vh", position: "sticky", top: 0,
-        borderRight: "1px solid #1e293b", background: "rgba(8,12,25,0.96)", backdropFilter: "blur(12px)",
-        zIndex: 50, color: "#94a3b8", overflowY: "auto", flexShrink: 0,
-      }}>
-        <div style={{ padding: "24px 20px", borderBottom: "1px solid #1e293b", background: "rgba(2,6,23,0.9)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", animation: "pulse 2s infinite" }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#ef4444", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>Live Feed</span>
-          </div>
-          <h1 style={{ fontWeight: 900, fontSize: 20, color: "#fff", margin: "0 0 2px", lineHeight: 1, fontFamily: "'Outfit', sans-serif" }}>ESCAPE FLAB</h1>
-          <p style={{ fontSize: 9, color: "#475569", fontWeight: 700, letterSpacing: 2, margin: "2px 0 0", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>
-            -ER Verbs • Présent
-          </p>
-          <p style={{ fontSize: 8, color: "#334155", fontWeight: 700, letterSpacing: 2, margin: "2px 0 0", textTransform: "uppercase" }}>Level A1.1.1</p>
+      {/* MOBILE TOP BAR */}
+      <div className="mobile-topbar" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(8,12,25,0.96)", backdropFilter: "blur(12px)", borderBottom: "1px solid #1e293b", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <span style={{ fontWeight: 900, fontSize: 14, color: "#fff", fontFamily: "'Outfit', sans-serif" }}>ESCAPE FLAB</span>
+          <span style={{ fontSize: 8, color: "#475569", marginLeft: 8, fontFamily: "'JetBrains Mono', monospace" }}>-ER • PRÉSENT</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 10, color: "#38bdf8", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{Math.round((Math.min(level, SECTIONS.length) / SECTIONS.length) * 100)}%</span>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "none", border: "1px solid #1e293b", borderRadius: 8, padding: "6px 10px", cursor: "pointer", color: "#94a3b8", fontSize: 16 }}>
+            {sidebarOpen ? "✕" : "☰"}
+          </button>
+        </div>
+      </div>
 
-          <div style={{ marginTop: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "#38bdf8", marginBottom: 5 }}>
-              <span>PROGRESS</span>
-              <span>{Math.round((Math.min(level, SECTIONS.length) / SECTIONS.length) * 100)}%</span>
+      {/* MOBILE SIDEBAR OVERLAY */}
+      {sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 90 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 50, right: 0, width: 260, maxHeight: "calc(100vh - 60px)", overflowY: "auto", background: "rgba(8,12,25,0.98)", borderLeft: "1px solid #1e293b", borderRadius: "0 0 0 16px", padding: "16px 12px" }}>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ width: "100%", height: 3, background: "#1e293b", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ width: `${(level / SECTIONS.length) * 100}%`, height: "100%", background: "linear-gradient(90deg, #0ea5e9, #6366f1)", borderRadius: 3 }} />
+              </div>
+            </div>
+            {SECTIONS.map((s, idx) => {
+              const isUnlocked = idx + 1 <= level;
+              const isCurrent = idx + 1 === level;
+              return (
+                <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, marginBottom: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, background: isCurrent ? "rgba(14,165,233,0.06)" : "transparent", color: isCurrent ? "#38bdf8" : isUnlocked ? "rgba(52,211,153,0.55)" : "#1e293b" }}>
+                  <span style={{ fontSize: 10 }}>{isUnlocked ? "✅" : "🔒"}</span>{s.title}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* DESKTOP SIDEBAR */}
+      <aside className="desktop-sidebar" style={{ display: "flex", flexDirection: "column", width: 220, height: "100vh", position: "sticky", top: 0, borderRight: "1px solid #1e293b", background: "rgba(8,12,25,0.96)", backdropFilter: "blur(12px)", zIndex: 50, color: "#94a3b8", overflowY: "auto", flexShrink: 0 }}>
+        <div style={{ padding: "20px 16px", borderBottom: "1px solid #1e293b" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", animation: "pulse 2s infinite" }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "#ef4444", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>Live</span>
+          </div>
+          <h1 style={{ fontWeight: 900, fontSize: 18, color: "#fff", margin: "0 0 2px", lineHeight: 1, fontFamily: "'Outfit', sans-serif" }}>ESCAPE FLAB</h1>
+          <p style={{ fontSize: 8, color: "#475569", fontWeight: 700, letterSpacing: 2, margin: "2px 0 0", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>-ER Verbs • Présent • A1.1.1</p>
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "#38bdf8", marginBottom: 4 }}>
+              <span>PROGRESS</span><span>{Math.round((Math.min(level, SECTIONS.length) / SECTIONS.length) * 100)}%</span>
             </div>
             <div style={{ width: "100%", height: 3, background: "#1e293b", borderRadius: 3, overflow: "hidden" }}>
-              <div style={{
-                width: `${(level / SECTIONS.length) * 100}%`, height: "100%",
-                background: "linear-gradient(90deg, #0ea5e9, #6366f1)",
-                transition: "width 1s ease", boxShadow: "0 0 8px #0ea5e9", borderRadius: 3,
-              }} />
+              <div style={{ width: `${(level / SECTIONS.length) * 100}%`, height: "100%", background: "linear-gradient(90deg, #0ea5e9, #6366f1)", transition: "width 1s ease", borderRadius: 3 }} />
             </div>
           </div>
         </div>
-
-        <nav style={{ flex: 1, padding: "10px 10px" }}>
+        <nav style={{ flex: 1, padding: "8px 8px" }}>
           {SECTIONS.map((s, idx) => {
             const isUnlocked = idx + 1 <= level;
             const isCurrent = idx + 1 === level;
             return (
-              <div key={s.id} style={{
-                display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, marginBottom: 1,
-                fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8,
-                transition: "all 0.2s",
-                border: isCurrent ? "1px solid rgba(14,165,233,0.25)" : "1px solid transparent",
-                background: isCurrent ? "rgba(14,165,233,0.06)" : "transparent",
-                color: isCurrent ? "#38bdf8" : isUnlocked ? "rgba(52,211,153,0.55)" : "#1e293b",
-              }}>
-                <span style={{ fontSize: 10 }}>{isUnlocked ? "✅" : "🔒"}</span>
-                {s.title}
+              <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 8, marginBottom: 1, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, background: isCurrent ? "rgba(14,165,233,0.06)" : "transparent", color: isCurrent ? "#38bdf8" : isUnlocked ? "rgba(52,211,153,0.55)" : "#1e293b" }}>
+                <span style={{ fontSize: 9 }}>{isUnlocked ? "✅" : "🔒"}</span>{s.title}
               </div>
             );
           })}
         </nav>
-
-        <div style={{
-          padding: "10px 14px", borderTop: "1px solid #1e293b", fontSize: 8, color: "#1e293b",
-          textAlign: "center", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1,
-        }}>
-          SECURE CONNECTION
-        </div>
       </aside>
 
       {/* MAIN */}
       <main style={{ flex: 1, width: "100%", position: "relative", zIndex: 10 }}>
         <CoverSlide onStart={() => unlockLevel(0)} />
-        <div style={{ paddingBottom: 120 }}>
+        <div style={{ paddingBottom: 80 }}>
           {SECTIONS.map((section, idx) => {
             const sectionLevel = idx + 1;
             return (
-              <SectionLayout key={section.id} id={`section-${sectionLevel}`} title={section.title}
-                isLocked={level < sectionLevel} index={sectionLevel}
-              >
+              <SectionLayout key={section.id} id={`section-${sectionLevel}`} title={section.title} isLocked={level < sectionLevel} index={sectionLevel}>
                 <section.comp onUnlock={() => unlockLevel(sectionLevel)} />
               </SectionLayout>
             );
